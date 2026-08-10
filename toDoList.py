@@ -19,6 +19,41 @@ explanation:
 status: {status}
 """)
 
+    def to_dict(self) -> dict:
+        return {
+            "name": self.name,
+            "explanation": self.explanation,
+            "status": self.status,
+        }
+
+    @classmethod
+    def dict_to_task(cls, d: dict):
+        return TASK(d["name"], d["explanation"], d["status"])
+
+
+def load() -> list[TASK]:
+    tasks: list[TASK] = []
+    try:
+        with open("tasks.json", "r") as file:
+            l = json.load(file)
+            for task in l:
+                tasks.append(TASK.dict_to_task(task))
+        return tasks
+    except Exception as e:
+        print(f"error in loading tasks{e} start with empty list")
+        return []
+
+
+def save(tasks: list[TASK]):
+    t = []
+    for task in tasks:
+        t.append(task.to_dict())
+    try:
+        with open("tasks.json", "w") as file:
+            json.dump(t, file, indent=4)
+    except Exception as e:
+        print(f"error in saving tasks{e}")
+
 
 def show_menu():
     print("""
@@ -55,6 +90,7 @@ def add_a_task(tasks: list[TASK]):
         if explanation == "$menu$":
             return
         tasks.append(TASK(name, explanation, False))
+        save(tasks)
         print("your task saved successfully")
 
 
@@ -78,17 +114,19 @@ def remove_a_task(tasks: list[TASK]):
         if order[0] == "del":
             try:
                 choice = int(order[1])
-                if choice > tasks.__len__ or choice <= 0:
+                if choice > len(tasks) or choice <= 0:
                     print("please enter a valid number")
                     continue
                 tasks.pop(choice - 1)
                 print("your task removed successfully")
+                save(tasks)
+                tasks = load()
             except ValueError:
                 print("command not found")
         elif order[0] == "show":
             try:
                 choice = int(order[1])
-                show_specific_task(tasks, choice)
+                show_specific_task(tasks, choice - 1)
             except ValueError:
                 print("command not found")
 
@@ -120,7 +158,7 @@ def edit_a_task(tasks: list[TASK]):
         if order[0] == "edit":
             try:
                 choice = int(order[1])
-                if choice > tasks.__len__ or choice <= 0:
+                if choice > len(tasks) or choice <= 0:
                     print("please enter a valid number")
                     continue
                 p = input(
@@ -157,6 +195,8 @@ def edit_a_task(tasks: list[TASK]):
                     else:
                         print("please enter a valid word")
                 print("your task edited successfully")
+                save(tasks)
+                tasks = load()
             except ValueError:
                 print("command not found")
         elif order[0] == "show":
@@ -175,6 +215,7 @@ def main() -> None:
 """)
     tasks: list[TASK] = []
     while True:
+        tasks = load()
         show_menu()
         try:
             choice = int(input("enter your choice").strip())
